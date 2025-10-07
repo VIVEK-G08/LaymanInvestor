@@ -5,78 +5,65 @@ dotenv.config();
 
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
 
-// All Tata Group stocks
-const TATA_STOCKS = [
+// All Tata Group stocks and popular Indian stocks
+const POPULAR_STOCKS = [
   { symbol: 'TATAMOTORS.NS', name: 'Tata Motors', sector: 'Automotive' },
   { symbol: 'TATASTEEL.NS', name: 'Tata Steel', sector: 'Steel' },
   { symbol: 'TCS.NS', name: 'Tata Consultancy Services', sector: 'IT Services' },
   { symbol: 'TATACONSUM.NS', name: 'Tata Consumer Products', sector: 'FMCG' },
   { symbol: 'TATAPOWER.NS', name: 'Tata Power', sector: 'Power' },
-  { symbol: 'TITAN.NS', name: 'Titan Company', sector: 'Jewelry & Watches' },
-  { symbol: 'TRENT.NS', name: 'Trent Ltd', sector: 'Retail' },
-  { symbol: 'TATAELXSI.NS', name: 'Tata Elxsi', sector: 'IT Services' },
-  { symbol: 'TATACHEM.NS', name: 'Tata Chemicals', sector: 'Chemicals' },
-  { symbol: 'TATACOFFEE.NS', name: 'Tata Coffee', sector: 'Agriculture' }
+  { symbol: 'TITAN.NS', name: 'Titan Company', sector: 'Jewelry' },
+  { symbol: 'RELIANCE.NS', name: 'Reliance Industries', sector: 'Oil & Gas' },
+  { symbol: 'INFY.NS', name: 'Infosys', sector: 'IT Services' },
+  { symbol: 'HDFCBANK.NS', name: 'HDFC Bank', sector: 'Banking' },
+  { symbol: 'ICICIBANK.NS', name: 'ICICI Bank', sector: 'Banking' },
+  { symbol: 'SBIN.NS', name: 'State Bank of India', sector: 'Banking' }
 ];
 
-// Popular Indian IPOs (recent and upcoming)
-const INDIAN_IPOS = [
-  { 
-    company: 'Tata Technologies', 
-    symbol: 'TATATECH.NS', 
-    issuePrice: '500-525', 
-    listingDate: '2023-11-30', 
-    status: 'Listed',
-    description: 'Engineering and product development services'
-  },
-  { 
-    company: 'Rail Vikas Nigam Ltd (RVNL)', 
-    symbol: 'RVNL.NS', 
-    issuePrice: '24-26', 
-    listingDate: '2024-04-19', 
-    status: 'Listed',
-    description: 'Railway infrastructure development'
-  },
-  { 
-    company: 'Go Airlines (India) Ltd', 
-    symbol: 'GOAIR.NS', 
-    issuePrice: 'TBD', 
-    listingDate: 'Upcoming', 
-    status: 'Upcoming',
-    description: 'Low-cost airline services'
-  },
-  { 
-    company: 'Bharat Renewable Energy Ltd', 
-    symbol: 'BRE.NS', 
-    issuePrice: 'TBD', 
-    listingDate: 'Upcoming', 
-    status: 'Upcoming',
-    description: 'Renewable energy projects'
-  },
-  { 
-    company: 'MobiKwik', 
-    symbol: 'MOBIKWIK.NS', 
-    issuePrice: 'TBD', 
-    listingDate: 'Upcoming', 
-    status: 'Upcoming',
-    description: 'Digital payments and fintech'
-  }
-];
-
-// Get stock quote
+// Get stock quote with fallback
 export async function getStockQuote(symbol) {
   try {
     const formattedSymbol = symbol.includes('.') ? symbol : `${symbol}.NS`;
     
-    // Yahoo Finance for Indian stocks
-    const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${formattedSymbol}`;
+    // Try Yahoo Finance first
+    const yahooQuote = await getYahooQuote(formattedSymbol);
+    if (yahooQuote && yahooQuote.c > 0) {
+      return yahooQuote;
+    }
+    
+    // Fallback to Finnhub for US stocks
+    if (!symbol.includes('.NS') && !symbol.includes('.BO')) {
+      return await getFinnhubQuote(symbol);
+    }
+    
+    // Return zero data if all fail
+    console.log(`No data found for ${symbol}`);
+    return { c: 0, d: 0, dp: 0, h: 0, l: 0, o: 0, pc: 0, isIndian: true };
+    
+  } catch (error) {
+    console.error('Stock Quote Error:', error.message);
+    return { c: 0, d: 0, dp: 0, h: 0, l: 0, o: 0, pc: 0, error: error.message };
+  }
+}
+
+// Yahoo Finance with better error handling
+async function getYahooQuote(symbol) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
     
     const response = await axios.get(url, {
-      headers: { 'User-Agent': USER_AGENT }
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
+      },
+      timeout: 10000
     });
     
-    const result = response.data.chart.result[0];
+    const result = response.data?.chart?.result?.[0];
+    if (!result || !result.meta) {
+      throw new Error('Invalid Yahoo response');
+    }
+    
     const meta = result.meta;
     const current = meta.regularMarketPrice || meta.previousClose || 0;
     const prevClose = meta.previousClose || 0;
@@ -91,13 +78,39 @@ export async function getStockQuote(symbol) {
       l: meta.regularMarketDayLow || 0,
       o: meta.regularMarketOpen || 0,
       pc: prevClose,
-      isIndian: true,
-      symbol: formattedSymbol,
+      isIndian: symbol.includes('.NS') || symbol.includes('.BO'),
+      symbol: symbol,
       currency: meta.currency || 'INR'
     };
   } catch (error) {
-    console.error('Stock Quote Error:', error.message);
-    return { c: 0, d: 0, dp: 0, h: 0, l: 0, o: 0, pc: 0, isIndian: true };
+    console.log(`Yahoo Finance error for ${symbol}:`, error.message);
+    return null;
+  }
+}
+
+// Finnhub for US stocks
+async function getFinnhubQuote(symbol) {
+  try {
+    if (!FINNHUB_API_KEY) {
+      throw new Error('Finnhub API key not configured');
+    }
+    
+    const response = await axios.get(`https://finnhub.io/api/v1/quote`, {
+      params: {
+        symbol: symbol.toUpperCase(),
+        token: FINNHUB_API_KEY
+      },
+      timeout: 10000
+    });
+    
+    if (response.data && response.data.c > 0) {
+      return response.data;
+    }
+    
+    return null;
+  } catch (error) {
+    console.log(`Finnhub error for ${symbol}:`, error.message);
+    return null;
   }
 }
 
@@ -105,82 +118,171 @@ export async function getStockQuote(symbol) {
 export async function getCompanyProfile(symbol) {
   try {
     const formattedSymbol = symbol.includes('.') ? symbol : `${symbol}.NS`;
-    const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
-    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${formattedSymbol}?modules=price,summaryProfile`;
     
-    const response = await axios.get(url, {
-      headers: { 'User-Agent': USER_AGENT }
-    });
+    // Check if it's in our popular stocks list
+    const stockInfo = POPULAR_STOCKS.find(s => 
+      s.symbol === formattedSymbol || 
+      s.symbol === symbol ||
+      s.symbol === `${symbol}.NS`
+    );
     
-    const result = response.data.quoteSummary.result[0];
-    const price = result.price || {};
-    const profile = result.summaryProfile || {};
+    if (stockInfo) {
+      return {
+        name: stockInfo.name,
+        finnhubIndustry: stockInfo.sector,
+        marketCapitalization: 0,
+        exchange: formattedSymbol.includes('.NS') ? 'NSE' : formattedSymbol.includes('.BO') ? 'BSE' : 'Unknown'
+      };
+    }
     
+    // Try Yahoo Finance for profile
+    const yahooProfile = await getYahooProfile(formattedSymbol);
+    if (yahooProfile) {
+      return yahooProfile;
+    }
+    
+    // Try Finnhub for US stocks
+    if (!symbol.includes('.NS') && !symbol.includes('.BO')) {
+      return await getFinnhubProfile(symbol);
+    }
+    
+    // Fallback
     return {
-      name: price.longName || price.shortName || formattedSymbol.replace('.NS', ''),
-      finnhubIndustry: profile.sector || 'Indian Company',
-      marketCapitalization: price.marketCap?.raw || 0,
-      exchange: price.exchangeName || 'NSE'
+      name: symbol.replace('.NS', '').replace('.BO', ''),
+      finnhubIndustry: 'Unknown',
+      marketCapitalization: 0
     };
+    
   } catch (error) {
     console.error('Profile Error:', error.message);
-    // Find from our predefined list
-    const stock = TATA_STOCKS.find(s => s.symbol === symbol || s.symbol === `${symbol}.NS`);
     return {
-      name: stock?.name || symbol,
-      finnhubIndustry: stock?.sector || 'Indian Company',
+      name: symbol,
+      finnhubIndustry: 'Unknown',
       marketCapitalization: 0
     };
   }
 }
 
-// Search stocks - SPECIAL HANDLING FOR "TATA"
-export async function searchStocks(query) {
-  const queryLower = query.toLowerCase();
-  
-  // Special case: "tata" returns all Tata stocks
-  if (queryLower.includes('tata')) {
-    return TATA_STOCKS.map(stock => ({
-      symbol: stock.symbol,
-      description: stock.name,
-      sector: stock.sector
-    }));
-  }
-  
-  // For other queries, use Yahoo Finance search
+async function getYahooProfile(symbol) {
   try {
-    const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
-    const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}`;
+    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=price,summaryProfile`;
     
     const response = await axios.get(url, {
-      headers: { 'User-Agent': USER_AGENT }
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      timeout: 10000
     });
     
-    const quotes = response.data.quotes || [];
-    return quotes
-      .filter(q => ['NSE', 'BSE'].includes(q.exchDisp))
-      .map(q => ({
-        symbol: q.symbol,
-        description: q.shortname || q.longname || q.symbol,
-        exchange: q.exchDisp
-      }))
-      .slice(0, 10); // Limit to 10 results
-      
+    const result = response.data?.quoteSummary?.result?.[0];
+    if (!result) return null;
+    
+    const price = result.price || {};
+    const profile = result.summaryProfile || {};
+    
+    return {
+      name: price.longName || price.shortName || symbol,
+      finnhubIndustry: profile.sector || 'Unknown',
+      marketCapitalization: price.marketCap?.raw || 0,
+      exchange: price.exchangeName || 'NSE'
+    };
+  } catch (error) {
+    console.log(`Yahoo profile error for ${symbol}:`, error.message);
+    return null;
+  }
+}
+
+async function getFinnhubProfile(symbol) {
+  try {
+    if (!FINNHUB_API_KEY) return null;
+    
+    const response = await axios.get(`https://finnhub.io/api/v1/stock/profile2`, {
+      params: {
+        symbol: symbol.toUpperCase(),
+        token: FINNHUB_API_KEY
+      },
+      timeout: 10000
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.log(`Finnhub profile error for ${symbol}:`, error.message);
+    return null;
+  }
+}
+
+// Search stocks
+export async function searchStocks(query) {
+  try {
+    const queryLower = query.toLowerCase();
+    
+    // Search in popular stocks first
+    const popularMatches = POPULAR_STOCKS.filter(stock => 
+      stock.symbol.toLowerCase().includes(queryLower) ||
+      stock.name.toLowerCase().includes(queryLower) ||
+      stock.sector.toLowerCase().includes(queryLower)
+    );
+    
+    // If we found matches, return them
+    if (popularMatches.length > 0) {
+      return popularMatches.map(stock => ({
+        symbol: stock.symbol,
+        description: stock.name,
+        sector: stock.sector
+      }));
+    }
+    
+    // Try Yahoo Finance search
+    const yahooResults = await searchYahoo(query);
+    if (yahooResults.length > 0) {
+      return yahooResults;
+    }
+    
+    // Fallback: return empty
+    return [];
+    
   } catch (error) {
     console.error('Search Error:', error.message);
     return [];
   }
 }
 
-// Get IPO listings
-export function getIPOListings() {
-  return INDIAN_IPOS;
+async function searchYahoo(query) {
+  try {
+    const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}`;
+    
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      timeout: 10000
+    });
+    
+    const quotes = response.data?.quotes || [];
+    return quotes
+      .filter(q => q.symbol && q.shortname)
+      .slice(0, 10)
+      .map(q => ({
+        symbol: q.symbol,
+        description: q.shortname || q.longname || q.symbol,
+        exchange: q.exchDisp || q.exchange
+      }));
+  } catch (error) {
+    console.log('Yahoo search error:', error.message);
+    return [];
+  }
 }
 
-// Get stock news (keep existing implementation)
+// Get stock news
 export async function getStockNews(symbol) {
   try {
     const clean = symbol.replace('.NS', '').replace('.BO', '').toUpperCase();
+    
+    if (!FINNHUB_API_KEY) {
+      console.log('Finnhub API key not configured');
+      return [];
+    }
+    
     const today = new Date();
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
     
@@ -190,11 +292,27 @@ export async function getStockNews(symbol) {
         from: weekAgo.toISOString().split('T')[0],
         to: today.toISOString().split('T')[0],
         token: FINNHUB_API_KEY
-      }
+      },
+      timeout: 10000
     });
+    
     return (response.data || []).slice(0, 5);
   } catch (error) {
     console.error('Stock News Error:', error.message);
     return [];
   }
+}
+
+// Get IPO listings (placeholder)
+export function getIPOListings() {
+  return [
+    { 
+      company: 'Tata Technologies', 
+      symbol: 'TATATECH.NS', 
+      issuePrice: '500-525', 
+      listingDate: '2023-11-30', 
+      status: 'Listed',
+      description: 'Engineering and product development services'
+    }
+  ];
 }
