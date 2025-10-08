@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LaymanInvestorApp from './LaymanInvestorApp';
 import Auth from './components/Auth';
+import LandingPage from './components/LandingPage';
 import './index.css';
-
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const [showLanding, setShowLanding] = useState(true);
 
   if (loading) {
     return (
@@ -16,6 +18,11 @@ function AppContent() {
         </div>
       </div>
     );
+  }
+
+  // Show landing page for non-authenticated users who haven't clicked "Get Started"
+  if (!user && showLanding) {
+    return <LandingPage onGetStarted={() => setShowLanding(false)} />;
   }
 
   return user ? <LaymanInvestorApp /> : <Auth />;
