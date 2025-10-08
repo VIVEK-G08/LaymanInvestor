@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, TrendingUp, Search, Brain, Zap, BarChart3, Star, ChartLine, LogOut, Trash2, User } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
+import TopStocks from './components/TopStocks';
 
 const LaymanInvestorApp = () => {
   const { user, signOut } = useAuth();
@@ -124,6 +125,7 @@ const LaymanInvestorApp = () => {
         role: msg.role,
         content: msg.content
       }));
+      console.log('Sending to AI with context:', conversationHistory);
 
       const response = await fetch(`${API_URL}/chat/message`, {
         method: 'POST',
@@ -217,6 +219,17 @@ const LaymanInvestorApp = () => {
     } catch (error) {
       console.error('Error fetching stock:', error);
       alert('Could not fetch stock data. Please check the symbol.');
+    }
+  };
+  const handleTopStockClick = async (symbol) => {
+    setStockSearch(symbol);
+    setActiveTab('stocks');
+    try {
+      const response = await fetch(`${API_URL}/stocks/quote/${symbol}`);
+      const data = await response.json();
+      setStockData(data);
+    } catch (error) {
+      console.error('Error fetching stock:', error);
     }
   };
 
