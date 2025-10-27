@@ -5,7 +5,62 @@ import { getCache, setCache } from '../utils/cache.js';
 dotenv.config();
 
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
-const NEWS_API_KEY = process.env.NEWS_API_KEY; // Optional: NewsAPI.org key
+const NEWS_API_KEY = process.env.NEWS_API_KEY; // NewsAPI.org key (optional)
+const NEWS_PROVIDER = (process.env.NEWS_PROVIDER || 'finnhub').toLowerCase();
+
+// Allowlist of professional news domains only
+const ALLOWED_DOMAINS = new Set([
+  'bloomberg.com',
+  'reuters.com',
+  'ft.com',
+  'wsj.com',
+  'economictimes.indiatimes.com',
+  'moneycontrol.com',
+  'business-standard.com',
+  'livemint.com',
+  'cnbc.com',
+  'cnbctv18.com',
+  'thehindu.com',
+  'toi.in',
+  'hindustantimes.com',
+  'ndtv.com',
+]);
+
+function isAllowedUrl(url) {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, '');
+    // Match base domain in allowlist
+    return Array.from(ALLOWED_DOMAINS).some((d) => host.endsWith(d));
+  } catch (e) {
+    return false;
+  }
+}
+
+function filterAllowed(articles) {
+  return (articles || []).filter((a) => a.url && isAllowedUrl(a.url));
+}
+
+async function fetchNewsFromNewsAPI(params = {}) {
+  if (!NEWS_API_KEY) return [];
+  const url = 'https://newsapi.org/v2/top-headlines';
+  const response = await axios.get(url, {
+    params: { ...params, apiKey: NEWS_API_KEY, pageSize: params.pageSize || 20 },
+    timeout: 10000,
+  });
+  const items = (response.data?.articles || []).map((a, idx) => ({
+    id: a.url || idx,
+    headline: a.title,
+    summary: a.description,
+    source: a.source?.name,
+    url: a.url,
+    image: a.urlToImage,
+    datetime: a.publishedAt ? Math.floor(new Date(a.publishedAt).getTime() / 1000) : Math.floor(Date.now() / 1000),
+    category: params.category || 'general',
+    related: [],
+  }));
+  return filterAllowed(items);
+}
 
 /**
  * Get market news from Finnhub
@@ -18,29 +73,29 @@ export async function getMarketNews(category = 'general', limit = 20) {
   if (cached) return cached;
 
   try {
-    if (!FINNHUB_API_KEY) {
-      return getMockNews(category, limit);
+    let news = [];
+    if (NEWS_PROVIDER === 'newsapi' && NEWS_API_KEY) {
+      news = await fetchNewsFromNewsAPI({ category, country: 'us', pageSize: limit });
+    } else if (FINNHUB_API_KEY) {
+      const response = await axios.get('https://finnhub.io/api/v1/news', {
+        params: { category, token: FINNHUB_API_KEY },
+        timeout: 10000,
+      });
+      const mapped = response.data.slice(0, limit).map((article) => ({
+        id: article.id,
+        headline: article.headline,
+        summary: article.summary,
+        source: article.source,
+        url: article.url,
+        image: article.image,
+        datetime: article.datetime,
+        category: article.category || category,
+        related: article.related || [],
+      }));
+      news = filterAllowed(mapped);
+    } else {
+      news = getMockNews(category, limit);
     }
-
-    const response = await axios.get('https://finnhub.io/api/v1/news', {
-      params: {
-        category: category,
-        token: FINNHUB_API_KEY
-      },
-      timeout: 10000
-    });
-
-    const news = response.data.slice(0, limit).map(article => ({
-      id: article.id,
-      headline: article.headline,
-      summary: article.summary,
-      source: article.source,
-      url: article.url,
-      image: article.image,
-      datetime: article.datetime,
-      category: article.category || category,
-      related: article.related || []
-    }));
 
     setCache(cacheKey, news, 300); // Cache for 5 minutes
     return news;
@@ -107,26 +162,31 @@ export async function getCountryNews(country = 'IN', category = 'business') {
   if (cached) return cached;
 
   try {
-    // Use market news for now, can integrate NewsAPI.org later
-    const marketNews = await getMarketNews('general', 20);
-    
-    // Filter by country if possible (basic implementation)
-    const filteredNews = marketNews.filter(article => {
-      if (country === 'IN') {
-        return article.headline.toLowerCase().includes('india') ||
-               article.headline.toLowerCase().includes('nse') ||
-               article.headline.toLowerCase().includes('sensex') ||
-               article.headline.toLowerCase().includes('nifty');
-      } else if (country === 'US') {
-        return article.headline.toLowerCase().includes('us') ||
-               article.headline.toLowerCase().includes('nasdaq') ||
-               article.headline.toLowerCase().includes('dow') ||
-               article.headline.toLowerCase().includes('s&p');
-      }
-      return true;
-    });
+    let result = [];
+    if (NEWS_PROVIDER === 'newsapi' && NEWS_API_KEY) {
+      // Map country code to NewsAPI expectations
+      const countryParam = country.toLowerCase() === 'in' ? 'in' : 'us';
+      result = await fetchNewsFromNewsAPI({ country: countryParam, category });
+    } else {
+      // fallback to general market news filtered by keywords
+      const marketNews = await getMarketNews('general', 20);
+      const filteredNews = marketNews.filter((article) => {
+        if (country === 'IN') {
+          return article.headline?.toLowerCase().includes('india') ||
+                 article.headline?.toLowerCase().includes('nse') ||
+                 article.headline?.toLowerCase().includes('sensex') ||
+                 article.headline?.toLowerCase().includes('nifty');
+        } else if (country === 'US') {
+          return article.headline?.toLowerCase().includes('us') ||
+                 article.headline?.toLowerCase().includes('nasdaq') ||
+                 article.headline?.toLowerCase().includes('dow') ||
+                 article.headline?.toLowerCase().includes('s&p');
+        }
+        return true;
+      });
+      result = filteredNews.length > 0 ? filteredNews : marketNews;
+    }
 
-    const result = filteredNews.length > 0 ? filteredNews : marketNews;
     setCache(cacheKey, result, 300);
     return result;
   } catch (error) {

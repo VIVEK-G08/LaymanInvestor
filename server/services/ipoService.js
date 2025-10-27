@@ -80,6 +80,45 @@ export async function getRecentIPOs() {
  * Updated with 2024-2025 IPOs
  */
 export async function getIndianIPOs() {
+  // If configured for live data, pull IPO calendar and filter Indian exchanges
+  try {
+    if (process.env.IPO_SOURCE === 'live' && FINNHUB_API_KEY) {
+      const today = new Date();
+      const past = new Date();
+      const future = new Date();
+      past.setDate(today.getDate() - 90);
+      future.setDate(today.getDate() + 90);
+
+      const from = past.toISOString().split('T')[0];
+      const to = future.toISOString().split('T')[0];
+      const res = await axios.get('https://finnhub.io/api/v1/calendar/ipo', {
+        params: { from, to, token: FINNHUB_API_KEY },
+        timeout: 10000
+      });
+
+      const all = res.data?.ipoCalendar || [];
+      const indian = all.filter(ipo => {
+        const ex = (ipo.exchange || '').toUpperCase();
+        const sym = ipo.symbol || '';
+        return ex.includes('NSE') || ex.includes('BSE') || sym.includes('.NS') || sym.includes('.BO');
+      }).map(ipo => ({
+        company: ipo.name,
+        symbol: ipo.symbol,
+        exchange: ipo.exchange || 'NSE/BSE',
+        date: ipo.date,
+        priceRange: ipo.priceRange || 'TBA',
+        status: getIPOStatus(ipo.date),
+        sector: ipo.industry || '—',
+        shares: ipo.numberOfShares || 'TBA'
+      }));
+
+      // If nothing returned, fall back to curated
+      if (indian.length > 0) return indian;
+    }
+  } catch (e) {
+    console.warn('Indian IPO live fetch failed, using curated list:', e.message);
+  }
+
   // Curated list of recent and upcoming Indian IPOs (2024-2025)
   return [
     // 2025 Upcoming IPOs

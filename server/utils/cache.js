@@ -95,3 +95,11 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 export default cache;
+
+// Named helpers for compatibility
+export const getCache = (key) => cache.get(key);
+export const setCache = (key, value, ttlSeconds = 300) => {
+  // existing cache expects ttl in ms; inputs are in seconds for services
+  const ttlMs = typeof ttlSeconds === 'number' ? ttlSeconds * 1000 : 300000;
+  cache.set(key, value, ttlMs);
+};
