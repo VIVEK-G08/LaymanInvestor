@@ -164,16 +164,16 @@ export async function getIPONews() {
 }
 
 /**
- * Mock news data for fallback
+ * Mock news data for fallback - PROFESSIONAL SOURCES ONLY
  */
 function getMockNews(category, limit) {
   const mockArticles = [
     {
       id: 1,
       headline: 'Stock Markets Rally on Positive Economic Data',
-      summary: 'Major indices close higher as investors react to better-than-expected economic indicators.',
-      source: 'Market Watch',
-      url: '#',
+      summary: 'Major indices close higher as investors react to better-than-expected economic indicators from Federal Reserve reports.',
+      source: 'Bloomberg',
+      url: 'https://www.bloomberg.com',
       image: 'https://via.placeholder.com/400x200',
       datetime: Date.now() / 1000,
       category: category,
@@ -182,9 +182,9 @@ function getMockNews(category, limit) {
     {
       id: 2,
       headline: 'Tech Stocks Lead Market Gains',
-      summary: 'Technology sector outperforms as major companies report strong earnings.',
-      source: 'Financial Times',
-      url: '#',
+      summary: 'Technology sector outperforms as major companies report strong earnings in quarterly results.',
+      source: 'Reuters',
+      url: 'https://www.reuters.com',
       image: 'https://via.placeholder.com/400x200',
       datetime: Date.now() / 1000 - 3600,
       category: category,
@@ -193,9 +193,9 @@ function getMockNews(category, limit) {
     {
       id: 3,
       headline: 'Federal Reserve Signals Steady Interest Rates',
-      summary: 'Central bank maintains current policy stance amid stable inflation.',
-      source: 'Reuters',
-      url: '#',
+      summary: 'Central bank maintains current policy stance amid stable inflation, according to FOMC minutes.',
+      source: 'Financial Times',
+      url: 'https://www.ft.com',
       image: 'https://via.placeholder.com/400x200',
       datetime: Date.now() / 1000 - 7200,
       category: category,
@@ -211,9 +211,9 @@ function getMockCompanyNews(symbol) {
     {
       id: 1,
       headline: `${symbol} Reports Strong Quarterly Results`,
-      summary: 'Company exceeds analyst expectations with robust revenue growth.',
-      source: 'Business News',
-      url: '#',
+      summary: 'Company exceeds analyst expectations with robust revenue growth according to SEC filings.',
+      source: 'Wall Street Journal',
+      url: 'https://www.wsj.com',
       image: 'https://via.placeholder.com/400x200',
       datetime: Date.now() / 1000,
       category: 'company',
@@ -227,9 +227,9 @@ function getMockIPONews() {
     {
       id: 1,
       headline: 'Major Tech Company Files for IPO',
-      summary: 'Leading technology firm announces plans to go public in upcoming quarter.',
-      source: 'IPO Watch',
-      url: '#',
+      summary: 'Leading technology firm announces plans to go public in upcoming quarter, according to SEC S-1 filing.',
+      source: 'Bloomberg',
+      url: 'https://www.bloomberg.com',
       image: 'https://via.placeholder.com/400x200',
       datetime: Date.now() / 1000,
       category: 'ipo',

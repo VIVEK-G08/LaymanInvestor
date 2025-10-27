@@ -335,9 +335,9 @@ const LaymanInvestorApp = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -345,11 +345,11 @@ const LaymanInvestorApp = () => {
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   LaymanInvestor
                   <Sparkles className="w-5 h-5 text-indigo-500" />
                 </h1>
-                <p className="text-sm text-gray-600">Your intelligent investment advisor 🤝</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Your intelligent investment advisor 🤝</p>
               </div>
             </div>
 
@@ -361,9 +361,9 @@ const LaymanInvestorApp = () => {
               <ThemeToggle />
 
               {/* User Profile */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
-                <User className="w-4 h-4 text-gray-600" />
-                <span className="text-sm text-gray-700">{user?.email?.split('@')[0]}</span>
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <span className="text-sm text-gray-700 dark:text-gray-300">{user?.email?.split('@')[0]}</span>
               </div>
 
               {/* Navigation Tabs */}
@@ -371,8 +371,8 @@ const LaymanInvestorApp = () => {
                 onClick={() => setActiveTab('chat')}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   activeTab === 'chat'
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <Brain className="w-4 h-4" />
@@ -382,8 +382,8 @@ const LaymanInvestorApp = () => {
                 onClick={() => setActiveTab('stocks')}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   activeTab === 'stocks'
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <BarChart3 className="w-4 h-4" />
@@ -393,8 +393,8 @@ const LaymanInvestorApp = () => {
                 onClick={() => setActiveTab('watchlist')}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   activeTab === 'watchlist'
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <Star className="w-4 h-4" />
@@ -404,8 +404,8 @@ const LaymanInvestorApp = () => {
                 onClick={() => setActiveTab('ipos')}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   activeTab === 'ipos'
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <Calendar className="w-4 h-4" />
@@ -415,8 +415,8 @@ const LaymanInvestorApp = () => {
                 onClick={() => setActiveTab('news')}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
                   activeTab === 'news'
-                    ? 'bg-indigo-100 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-medium'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <Newspaper className="w-4 h-4" />
