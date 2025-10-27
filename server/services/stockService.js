@@ -175,11 +175,12 @@ export async function getCompanyProfile(symbol) {
 
 async function getYahooProfile(symbol) {
   try {
-    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=price,summaryProfile`;
+    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=price,summaryProfile,assetProfile`;
     
     const response = await axios.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json'
       },
       timeout: 10000
     });
@@ -188,13 +189,20 @@ async function getYahooProfile(symbol) {
     if (!result) return null;
     
     const price = result.price || {};
-    const profile = result.summaryProfile || {};
+    const summaryProfile = result.summaryProfile || {};
+    const assetProfile = result.assetProfile || {};
+    
+    // Get industry/sector from multiple sources
+    const industry = assetProfile.industry || summaryProfile.industry || assetProfile.sector || summaryProfile.sector || 'Financial Services';
+    const sector = assetProfile.sector || summaryProfile.sector || 'Financial';
     
     return {
-      name: price.longName || price.shortName || symbol,
-      finnhubIndustry: profile.sector || 'Unknown',
+      name: price.longName || price.shortName || assetProfile.longBusinessSummary?.split(' ').slice(0, 3).join(' ') || symbol,
+      finnhubIndustry: industry,
+      sector: sector,
       marketCapitalization: price.marketCap?.raw || 0,
-      exchange: price.exchangeName || 'NSE'
+      exchange: price.exchangeName || (symbol.includes('.NS') ? 'NSE' : symbol.includes('.BO') ? 'BSE' : 'NASDAQ'),
+      country: assetProfile.country || (symbol.includes('.NS') || symbol.includes('.BO') ? 'India' : 'United States')
     };
   } catch (error) {
     console.log(`Yahoo profile error for ${symbol}:`, error.message);

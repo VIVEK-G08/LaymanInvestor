@@ -1,13 +1,18 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
 import { getStockQuote, getCompanyProfile, getStockNews } from './stockService.js';
+import { TEACHING_SYSTEM_PROMPT, getEmotionContext } from '../prompts/teachingPrompt.js';
 
 dotenv.config();
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-const SYSTEM_PROMPT = `You are "LaymanInvestor" — a world-class, friendly financial AI coach for absolute beginner investors.
+// Use the enhanced Varsity-style teaching prompt
+const SYSTEM_PROMPT = TEACHING_SYSTEM_PROMPT;
+
+// Legacy prompt kept for reference (now replaced by TEACHING_SYSTEM_PROMPT)
+const LEGACY_SYSTEM_PROMPT = `You are "LaymanInvestor" — a world-class, friendly financial AI coach for absolute beginner investors.
 
 Your job is to:
 ✅ Teach investing using simple mental models and stories

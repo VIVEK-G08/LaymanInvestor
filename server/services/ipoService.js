@@ -150,29 +150,52 @@ function getMockIPOData() {
 }
 
 /**
- * Get comprehensive IPO data (US + Indian)
+ * Categorize IPOs by region (Indian vs Foreign)
+ */
+function categorizeIPOsByRegion(ipos) {
+  const indianExchanges = ['NSE', 'BSE', 'NSE/BSE'];
+  
+  const indian = ipos.filter(ipo => 
+    indianExchanges.includes(ipo.exchange) || 
+    ipo.symbol?.includes('.NS') || 
+    ipo.symbol?.includes('.BO')
+  );
+  
+  const foreign = ipos.filter(ipo => 
+    !indianExchanges.includes(ipo.exchange) && 
+    !ipo.symbol?.includes('.NS') && 
+    !ipo.symbol?.includes('.BO')
+  );
+  
+  return { indian, foreign };
+}
+
+/**
+ * Get all IPO data categorized by region and time
  */
 export async function getAllIPOs() {
-  try {
-    const [upcoming, recent, indian] = await Promise.all([
-      getUpcomingIPOs(),
-      getRecentIPOs(),
-      getIndianIPOs()
-    ]);
+  const [upcomingRaw, recentRaw, indianIPOs] = await Promise.all([
+    getUpcomingIPOs(),
+    getRecentIPOs(),
+    getIndianIPOs()
+  ]);
 
-    return {
-      upcoming: upcoming.filter(ipo => ipo.status === 'Upcoming'),
-      recent: recent.filter(ipo => ipo.status === 'Listed'),
-      indian: indian,
-      all: [...upcoming, ...recent, ...indian]
-    };
-  } catch (error) {
-    console.error('Get All IPOs Error:', error.message);
-    return {
-      upcoming: [],
-      recent: [],
-      indian: await getIndianIPOs(),
-      all: []
-    };
-  }
+  // Categorize upcoming and recent by region
+  const upcomingCategorized = categorizeIPOsByRegion(upcomingRaw);
+  const recentCategorized = categorizeIPOsByRegion(recentRaw);
+
+  return {
+    upcoming: {
+      indian: [...upcomingCategorized.indian, ...indianIPOs.filter(ipo => ipo.status === 'Upcoming')],
+      foreign: upcomingCategorized.foreign,
+      all: upcomingRaw
+    },
+    recent: {
+      indian: [...recentCategorized.indian, ...indianIPOs.filter(ipo => ipo.status === 'Listed')],
+      foreign: recentCategorized.foreign,
+      all: recentRaw
+    },
+    indian: indianIPOs,
+    all: [...upcomingRaw, ...recentRaw, ...indianIPOs]
+  };
 }
