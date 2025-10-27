@@ -1,0 +1,11 @@
+fix(server): export cache helpers, add live Indian IPO operator, professional-only news provider switch
+
+- utils/cache.js: add named exports getCache/setCache, keep default export
+- services/ipoService.js: support IPO_SOURCE=live via Finnhub NSE/BSE filter; fallback to curated
+- services/newsService.js: add NEWS_PROVIDER switch (finnhub|newsapi), allowlist reputable domains, filter by domain, keep caching
+
+Env flags supported:
+- FINNHUB_API_KEY=<key>
+- NEWS_API_KEY=<key> (for NEWS_PROVIDER=newsapi)
+- NEWS_PROVIDER=finnhub|newsapi (default finnhub)
+- IPO_SOURCE=live|static (default static)

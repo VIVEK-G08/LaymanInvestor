@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, TrendingUp, Search, Brain, Zap, BarChart3, Star, ChartLine, LogOut, Trash2, User, Calendar, Newspaper } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
-import { useApp } from './contexts/AppContext';
 import TopStocks from './components/TopStocks';
 import IPOTab from './components/IPOTab';
 import NewsTab from './components/News/NewsTab';

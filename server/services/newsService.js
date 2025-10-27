@@ -43,9 +43,28 @@ function filterAllowed(articles) {
 
 async function fetchNewsFromNewsAPI(params = {}) {
   if (!NEWS_API_KEY) return [];
+  
+  // Map categories to NewsAPI categories
+  const categoryMap = {
+    'general': 'general',
+    'forex': 'business',
+    'crypto': 'technology',
+    'merger': 'business',
+    'business': 'business',
+    'technology': 'technology',
+    'finance': 'business'
+  };
+  
+  const newsCategory = categoryMap[params.category] || 'business';
+  
   const url = 'https://newsapi.org/v2/top-headlines';
   const response = await axios.get(url, {
-    params: { ...params, apiKey: NEWS_API_KEY, pageSize: params.pageSize || 20 },
+    params: { 
+      ...params, 
+      category: newsCategory,
+      apiKey: NEWS_API_KEY, 
+      pageSize: params.pageSize || 20 
+    },
     timeout: 10000,
   });
   const items = (response.data?.articles || []).map((a, idx) => ({
@@ -72,11 +91,16 @@ export async function getMarketNews(category = 'general', limit = 20) {
   const cached = getCache(cacheKey);
   if (cached) return cached;
 
+  console.log(`Fetching market news. Provider: ${NEWS_PROVIDER}, Category: ${category}`);
+  
   try {
     let news = [];
     if (NEWS_PROVIDER === 'newsapi' && NEWS_API_KEY) {
+      console.log('Using NewsAPI.org provider');
       news = await fetchNewsFromNewsAPI({ category, country: 'us', pageSize: limit });
+      console.log(`NewsAPI returned ${news.length} articles`);
     } else if (FINNHUB_API_KEY) {
+      console.log('Using Finnhub provider');
       const response = await axios.get('https://finnhub.io/api/v1/news', {
         params: { category, token: FINNHUB_API_KEY },
         timeout: 10000,
@@ -93,7 +117,15 @@ export async function getMarketNews(category = 'general', limit = 20) {
         related: article.related || [],
       }));
       news = filterAllowed(mapped);
+      console.log(`Finnhub returned ${news.length} articles after filtering`);
     } else {
+      console.log('No API keys available, using mock data');
+      news = getMockNews(category, limit);
+    }
+
+    // If no news after filtering, use mock data
+    if (news.length === 0) {
+      console.log('No news after filtering, using mock data');
       news = getMockNews(category, limit);
     }
 
@@ -101,6 +133,7 @@ export async function getMarketNews(category = 'general', limit = 20) {
     return news;
   } catch (error) {
     console.error('Error fetching market news:', error.message);
+    console.log('Falling back to mock data');
     return getMockNews(category, limit);
   }
 }

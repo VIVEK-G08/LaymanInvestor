@@ -80,9 +80,13 @@ export async function getRecentIPOs() {
  * Updated with 2024-2025 IPOs
  */
 export async function getIndianIPOs() {
+  console.log('IPO_SOURCE:', process.env.IPO_SOURCE);
+  console.log('FINNHUB_API_KEY exists:', !!FINNHUB_API_KEY);
+  
   // If configured for live data, pull IPO calendar and filter Indian exchanges
   try {
     if (process.env.IPO_SOURCE === 'live' && FINNHUB_API_KEY) {
+      console.log('Attempting live IPO fetch from Finnhub...');
       const today = new Date();
       const past = new Date();
       const future = new Date();
@@ -91,12 +95,16 @@ export async function getIndianIPOs() {
 
       const from = past.toISOString().split('T')[0];
       const to = future.toISOString().split('T')[0];
+      console.log(`Fetching IPOs from ${from} to ${to}`);
+      
       const res = await axios.get('https://finnhub.io/api/v1/calendar/ipo', {
         params: { from, to, token: FINNHUB_API_KEY },
         timeout: 10000
       });
 
       const all = res.data?.ipoCalendar || [];
+      console.log(`Total IPOs from Finnhub: ${all.length}`);
+      
       const indian = all.filter(ipo => {
         const ex = (ipo.exchange || '').toUpperCase();
         const sym = ipo.symbol || '';
@@ -112,8 +120,13 @@ export async function getIndianIPOs() {
         shares: ipo.numberOfShares || 'TBA'
       }));
 
+      console.log(`Indian IPOs found: ${indian.length}`);
+      
       // If nothing returned, fall back to curated
-      if (indian.length > 0) return indian;
+      if (indian.length > 0) {
+        console.log('Using live Indian IPO data');
+        return indian;
+      }
     }
   } catch (e) {
     console.warn('Indian IPO live fetch failed, using curated list:', e.message);
