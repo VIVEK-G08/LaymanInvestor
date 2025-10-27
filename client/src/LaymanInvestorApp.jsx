@@ -1,8 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, TrendingUp, Search, Brain, Zap, BarChart3, Star, ChartLine, LogOut, Trash2, User, Calendar } from 'lucide-react';
+import { Send, Sparkles, TrendingUp, Search, Brain, Zap, BarChart3, Star, ChartLine, LogOut, Trash2, User, Calendar, Newspaper } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
+import { useApp } from './contexts/AppContext';
 import TopStocks from './components/TopStocks';
 import IPOTab from './components/IPOTab';
+import NewsTab from './components/News/NewsTab';
+import CountrySelector from './components/Common/CountrySelector';
+import ThemeToggle from './components/Common/ThemeToggle';
 
 const LaymanInvestorApp = () => {
   const { user, signOut } = useAuth();
@@ -350,6 +354,12 @@ const LaymanInvestorApp = () => {
             </div>
 
             <div className="flex gap-2 items-center">
+              {/* Country Selector */}
+              <CountrySelector />
+              
+              {/* Theme Toggle */}
+              <ThemeToggle />
+
               {/* User Profile */}
               <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
                 <User className="w-4 h-4 text-gray-600" />
@@ -400,6 +410,17 @@ const LaymanInvestorApp = () => {
               >
                 <Calendar className="w-4 h-4" />
                 IPOs
+              </button>
+              <button
+                onClick={() => setActiveTab('news')}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
+                  activeTab === 'news'
+                    ? 'bg-indigo-100 text-indigo-700 font-medium'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Newspaper className="w-4 h-4" />
+                News
               </button>
 
               {/* Clear History Button (only in chat tab) */}
@@ -749,6 +770,11 @@ const LaymanInvestorApp = () => {
           {/* IPO Tab */}
           {activeTab === 'ipos' && (
             <IPOTab onStockClick={handleTopStockClick} />
+          )}
+
+          {/* News Tab */}
+          {activeTab === 'news' && (
+            <NewsTab />
           )}
         </div>
       </div>

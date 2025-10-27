@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AppProvider } from './contexts/AppContext';
 import LaymanInvestorApp from './LaymanInvestorApp';
 import Auth from './components/Auth';
 import LandingPage from './components/LandingPage';
@@ -30,9 +31,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <AppProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </AppProvider>
   );
 }
 
