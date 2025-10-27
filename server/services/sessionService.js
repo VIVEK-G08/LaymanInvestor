@@ -104,7 +104,7 @@ export async function deleteChatSession(sessionId) {
   try {
     // First delete all messages in the session
     await supabase
-      .from('chat_messages')
+      .from('chat_history')
       .delete()
       .eq('session_id', sessionId);
 
@@ -129,7 +129,7 @@ export async function updateSessionActivity(sessionId) {
   try {
     // Get current message count
     const { count } = await supabase
-      .from('chat_messages')
+      .from('chat_history')
       .select('*', { count: 'exact', head: true })
       .eq('session_id', sessionId);
 
@@ -158,7 +158,7 @@ export async function updateSessionActivity(sessionId) {
 export async function getSessionMessages(sessionId) {
   try {
     const { data, error } = await supabase
-      .from('chat_messages')
+      .from('chat_history')
       .select('*')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true });
@@ -177,7 +177,7 @@ export async function getSessionMessages(sessionId) {
 export async function saveMessageToSession(sessionId, userId, role, content, emotion = null) {
   try {
     const { data, error } = await supabase
-      .from('chat_messages')
+      .from('chat_history')
       .insert([
         {
           session_id: sessionId,
