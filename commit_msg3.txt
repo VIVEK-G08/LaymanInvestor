@@ -1,5 +1,0 @@
-docs: Add IPO tab fix guide and changelog
-
-- IPO_TAB_FIX.md - Solution for IPO tab not showing
-- CHANGELOG.md - Complete version history
-- Professional documentation complete
