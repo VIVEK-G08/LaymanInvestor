@@ -23,22 +23,32 @@ const POPULAR_STOCKS = [
 // Get stock quote with fallback
 export async function getStockQuote(symbol) {
   try {
-    const formattedSymbol = symbol.includes('.') ? symbol : `${symbol}.NS`;
+    // Determine if it's an Indian stock
+    const isIndianStock = symbol.includes('.NS') || symbol.includes('.BO');
     
-    // Try Yahoo Finance first
-    const yahooQuote = await getYahooQuote(formattedSymbol);
-    if (yahooQuote && yahooQuote.c > 0) {
-      return yahooQuote;
-    }
-    
-    // Fallback to Finnhub for US stocks
-    if (!symbol.includes('.NS') && !symbol.includes('.BO')) {
-      return await getFinnhubQuote(symbol);
+    // For US stocks, try Finnhub first (more reliable for US markets)
+    if (!isIndianStock) {
+      const finnhubQuote = await getFinnhubQuote(symbol);
+      if (finnhubQuote && finnhubQuote.c > 0) {
+        return finnhubQuote;
+      }
+      
+      // Fallback to Yahoo for US stocks
+      const yahooQuote = await getYahooQuote(symbol);
+      if (yahooQuote && yahooQuote.c > 0) {
+        return yahooQuote;
+      }
+    } else {
+      // For Indian stocks, use Yahoo Finance
+      const yahooQuote = await getYahooQuote(symbol);
+      if (yahooQuote && yahooQuote.c > 0) {
+        return yahooQuote;
+      }
     }
     
     // Return zero data if all fail
     console.log(`No data found for ${symbol}`);
-    return { c: 0, d: 0, dp: 0, h: 0, l: 0, o: 0, pc: 0, isIndian: true };
+    return { c: 0, d: 0, dp: 0, h: 0, l: 0, o: 0, pc: 0, isIndian: isIndianStock };
     
   } catch (error) {
     console.error('Stock Quote Error:', error.message);
@@ -303,16 +313,4 @@ export async function getStockNews(symbol) {
   }
 }
 
-// Get IPO listings (placeholder)
-export function getIPOListings() {
-  return [
-    { 
-      company: 'Tata Technologies', 
-      symbol: 'TATATECH.NS', 
-      issuePrice: '500-525', 
-      listingDate: '2023-11-30', 
-      status: 'Listed',
-      description: 'Engineering and product development services'
-    }
-  ];
-}
+// Note: IPO listings moved to ipoService.js for better organization

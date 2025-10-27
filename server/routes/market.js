@@ -2,6 +2,7 @@ import express from 'express';
 import axios from 'axios';
 import dotenv from 'dotenv';
 import { getStockQuote, getCompanyProfile, getStockNews } from '../services/stockService.js';
+import { getTopMovers, getTrendingStocks, getMarketOverview } from '../services/marketDataService.js';
 
 dotenv.config();
 
@@ -146,5 +147,40 @@ For specific stock analysis, please mention a stock symbol (e.g., AAPL, TSLA, RE
 
 Would you like me to analyze a specific stock or sector in detail?`;
 }
+
+// GET /api/market/top-movers
+router.get('/top-movers', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 5;
+    const movers = await getTopMovers(limit);
+    res.json(movers);
+  } catch (error) {
+    console.error('Top Movers Error:', error);
+    res.status(500).json({ error: 'Failed to fetch top movers' });
+  }
+});
+
+// GET /api/market/trending
+router.get('/trending', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 5;
+    const trending = await getTrendingStocks(limit);
+    res.json({ trending });
+  } catch (error) {
+    console.error('Trending Stocks Error:', error);
+    res.status(500).json({ error: 'Failed to fetch trending stocks' });
+  }
+});
+
+// GET /api/market/overview
+router.get('/overview', async (req, res) => {
+  try {
+    const overview = await getMarketOverview();
+    res.json(overview);
+  } catch (error) {
+    console.error('Market Overview Error:', error);
+    res.status(500).json({ error: 'Failed to fetch market overview' });
+  }
+});
 
 export default router;

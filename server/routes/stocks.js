@@ -3,10 +3,10 @@ import {
   getStockQuote, 
   getCompanyProfile, 
   searchStocks, 
-  getStockNews,
-  getIPOListings 
+  getStockNews
 } from '../services/stockService.js';
-import { saveWatchedStock, getWatchlist } from '../services/supabaseService.js';
+import { getAllIPOs, getUpcomingIPOs, getRecentIPOs, getIndianIPOs } from '../services/ipoService.js';
+import { saveWatchedStock, getWatchlist, removeFromWatchlist } from '../services/supabaseService.js';
 
 const router = express.Router();
 
@@ -71,10 +71,48 @@ router.get('/watchlist/:userId', async (req, res) => {
   }
 });
 
-// NEW: IPO Listings endpoint
+// DELETE watchlist item
+router.delete('/watchlist/:userId/:symbol', async (req, res) => {
+  try {
+    const { userId, symbol } = req.params;
+    await removeFromWatchlist(userId, symbol);
+    res.json({ success: true, message: 'Removed from watchlist' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// IPO Listings endpoints
 router.get('/ipos', async (req, res) => {
   try {
-    const ipos = getIPOListings();
+    const ipos = await getAllIPOs();
+    res.json(ipos);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/ipos/upcoming', async (req, res) => {
+  try {
+    const ipos = await getUpcomingIPOs();
+    res.json({ ipos });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/ipos/recent', async (req, res) => {
+  try {
+    const ipos = await getRecentIPOs();
+    res.json({ ipos });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/ipos/indian', async (req, res) => {
+  try {
+    const ipos = await getIndianIPOs();
     res.json({ ipos });
   } catch (error) {
     res.status(500).json({ error: error.message });
