@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, TrendingUp, Search, Brain, Zap, BarChart3, Star, ChartLine, LogOut, Trash2, User } from 'lucide-react';
+import { Send, Sparkles, TrendingUp, Search, Brain, Zap, BarChart3, Star, ChartLine, LogOut, Trash2, User, Calendar } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
 import TopStocks from './components/TopStocks';
+import IPOTab from './components/IPOTab';
 
 const LaymanInvestorApp = () => {
   const { user, signOut } = useAuth();
@@ -388,6 +389,17 @@ const LaymanInvestorApp = () => {
                 <Star className="w-4 h-4" />
                 Watchlist ({watchlist.length})
               </button>
+              <button
+                onClick={() => setActiveTab('ipos')}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
+                  activeTab === 'ipos'
+                    ? 'bg-indigo-100 text-indigo-700 font-medium'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Calendar className="w-4 h-4" />
+                IPOs
+              </button>
 
               {/* Clear History Button (only in chat tab) */}
               {activeTab === 'chat' && (
@@ -681,6 +693,9 @@ const LaymanInvestorApp = () => {
                   )}
                 </div>
               )}
+
+              {/* Top Stocks Section */}
+              <TopStocks onStockClick={handleTopStockClick} />
             </div>
           )}
 
@@ -728,6 +743,11 @@ const LaymanInvestorApp = () => {
                 ))
               )}
             </div>
+          )}
+
+          {/* IPO Tab */}
+          {activeTab === 'ipos' && (
+            <IPOTab onStockClick={handleTopStockClick} />
           )}
         </div>
       </div>
