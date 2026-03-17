@@ -26,12 +26,6 @@ export const COUNTRIES = {
 };
 
 export const AppProvider = ({ children }) => {
-  // Theme state
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    return saved || 'light';
-  });
-
   // Country state
   const [selectedCountry, setSelectedCountry] = useState(() => {
     const saved = localStorage.getItem('selectedCountry');
@@ -53,12 +47,6 @@ export const AppProvider = ({ children }) => {
     };
   });
 
-  // Apply theme to document
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
   // Save country preference
   useEffect(() => {
     localStorage.setItem('selectedCountry', selectedCountry);
@@ -68,10 +56,6 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('userPreferences', JSON.stringify(preferences));
   }, [preferences]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
 
   const switchCountry = (countryCode) => {
     setSelectedCountry(countryCode);
@@ -84,12 +68,6 @@ export const AppProvider = ({ children }) => {
   const getCountryConfig = () => COUNTRIES[selectedCountry];
 
   const value = {
-    // Theme
-    theme,
-    setTheme,
-    toggleTheme,
-    isDark: theme === 'dark',
-    
     // Country
     selectedCountry,
     switchCountry,

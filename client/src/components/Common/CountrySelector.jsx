@@ -29,11 +29,11 @@ const CountrySelector = () => {
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-600 transition-all shadow-sm hover:shadow-md"
+        className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-200 rounded-xl hover:border-indigo-300 transition-all shadow-sm hover:shadow-md"
       >
-        <Globe className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        <Globe className="w-4 h-4 text-gray-600" />
         <span className="text-2xl">{countryConfig.flag}</span>
-        <span className="font-medium text-gray-900 dark:text-gray-100">
+        <span className="font-medium text-gray-900">
           {countryConfig.name}
         </span>
         <ChevronDown 
@@ -43,9 +43,9 @@ const CountrySelector = () => {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full mt-2 right-0 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden z-50 animate-fade-in-down">
+        <div className="absolute top-full mt-2 right-0 w-64 bg-white rounded-xl shadow-xl border-2 border-gray-200 overflow-hidden z-50 animate-fade-in-down">
           <div className="p-2">
-            <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Select Market
             </div>
             
@@ -58,22 +58,22 @@ const CountrySelector = () => {
                   onClick={() => handleCountryChange(country.code)}
                   className={`w-full flex items-center justify-between px-3 py-3 rounded-lg transition-all ${
                     isSelected
-                      ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      ? 'bg-indigo-100 text-indigo-700'
+                      : 'hover:bg-gray-100 text-gray-700'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{country.flag}</span>
                     <div className="text-left">
                       <div className="font-semibold">{country.name}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-xs text-gray-500">
                         {country.exchanges.join(', ')}
                       </div>
                     </div>
                   </div>
                   
                   {isSelected && (
-                    <Check className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    <Check className="w-5 h-5 text-indigo-600" />
                   )}
                 </button>
               );
@@ -81,17 +81,17 @@ const CountrySelector = () => {
           </div>
 
           {/* Market Info */}
-          <div className="border-t-2 border-gray-200 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-900/50">
-            <div className="text-xs text-gray-600 dark:text-gray-400">
+          <div className="border-t-2 border-gray-200 p-3 bg-gray-50">
+            <div className="text-xs text-gray-600">
               <div className="flex items-center justify-between mb-1">
                 <span>Market Hours:</span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">
+                <span className="font-medium text-gray-900">
                   {countryConfig.marketHours}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Currency:</span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">
+                <span className="font-medium text-gray-900">
                   {countryConfig.currency}
                 </span>
               </div>
