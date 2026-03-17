@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, TrendingUp, Globe, MapPin, DollarSign, Users, Clock, Sparkles, RefreshCw, ChevronRight, Building2, Award } from 'lucide-react';
 
 const IPOTab = ({ onStockClick }) => {
@@ -10,11 +10,7 @@ const IPOTab = ({ onStockClick }) => {
 
   const API_URL = process.env.REACT_APP_API_URL || 'https://LaymanInvestor.onrender.com/api';
 
-  useEffect(() => {
-    fetchIPOData();
-  }, []);
-
-  const fetchIPOData = async () => {
+  const fetchIPOData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`${API_URL}/stocks/ipos`);
@@ -27,7 +23,11 @@ const IPOTab = ({ onStockClick }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
+
+  useEffect(() => {
+    fetchIPOData();
+  }, [fetchIPOData]);
 
   const getDisplayedIPOs = () => {
     if (!ipoData) return [];

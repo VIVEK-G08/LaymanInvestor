@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown, Flame, RefreshCw } from 'lucide-react';
 
 const TopStocks = ({ onStockClick }) => {
@@ -11,7 +11,7 @@ const TopStocks = ({ onStockClick }) => {
 
   const API_URL = process.env.REACT_APP_API_URL || 'https://LaymanInvestor.onrender.com/api';
 
-  const fetchMarketData = async () => {
+  const fetchMarketData = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -49,7 +49,7 @@ const TopStocks = ({ onStockClick }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
 
   useEffect(() => {
     fetchMarketData();
@@ -57,7 +57,7 @@ const TopStocks = ({ onStockClick }) => {
     // Refresh every 5 minutes
     const interval = setInterval(fetchMarketData, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchMarketData]);
 
   return (
     <div className="space-y-6">
