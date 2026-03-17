@@ -469,6 +469,7 @@ const LaymanInvestorApp = () => {
       </div>
 
       {/* Main Content */}
+      <>
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-6xl mx-auto">
           {/* Chat Tab */}
@@ -803,11 +804,14 @@ const LaymanInvestorApp = () => {
 
       {/* Chat Input (only show on chat tab) */}
       {activeTab === 'chat' && (
-        <>
-          {messages.length <= 1 && (
-            <div className="px-4 pb-4">
-              <div className="max-w-6xl mx-auto">
-                <p className="text-sm text-gray-600 mb-3 flex items-center gap-2">
+        <div className="px-4 pb-4">
+          <div className="max-w-6xl mx-auto">
+            <p className="text-sm text-gray-600 mb-3 flex items-center gap-2">
+              <Zap className="w-4 h-4" />
+              Try asking:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {quickPrompts.map((prompt, idx) => (
                   <Zap className="w-4 h-4" />
                   Try asking:
                 </p>
@@ -847,14 +851,14 @@ const LaymanInvestorApp = () => {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
-                💡 I provide real market data for investors and simple explanations for learners
+                I provide real market data for investors and simple explanations for learners
               </p>
             </div>
           </div>
         </>
       )}
+      </>
     </div>
   );
-};
 
 export default LaymanInvestorApp;
