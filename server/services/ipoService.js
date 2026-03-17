@@ -1,5 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import { getAllNSEBSEIPOs } from './nseBseService.js';
 
 dotenv.config();
 
@@ -293,30 +294,114 @@ function categorizeIPOsByRegion(ipos) {
 
 /**
  * Get all IPO data categorized by region and time
+ * Uses NSE-BSE API for Indian IPOs and Finnhub for foreign IPOs
  */
 export async function getAllIPOs() {
-  const [upcomingRaw, recentRaw, indianIPOs] = await Promise.all([
-    getUpcomingIPOs(),
-    getRecentIPOs(),
-    getIndianIPOs()
-  ]);
+  try {
+    // Get Indian IPOs from NSE-BSE API
+    const nseBseData = await getAllNSEBSEIPOs();
+    
+    // Get foreign IPOs from Finnhub (if API key is available)
+    let foreignIPOs = [];
+    if (FINNHUB_API_KEY) {
+      try {
+        const today = new Date();
+        const past = new Date();
+        const future = new Date();
+        past.setDate(today.getDate() - 90);
+        future.setDate(today.getDate() + 90);
 
-  // Categorize upcoming and recent by region
-  const upcomingCategorized = categorizeIPOsByRegion(upcomingRaw);
-  const recentCategorized = categorizeIPOsByRegion(recentRaw);
+        const from = past.toISOString().split('T')[0];
+        const to = future.toISOString().split('T')[0];
+        
+        const response = await axios.get('https://finnhub.io/api/v1/calendar/ipo', {
+          params: { from, to, token: FINNHUB_API_KEY },
+          timeout: 10000
+        });
 
-  return {
-    upcoming: {
-      indian: [...upcomingCategorized.indian, ...indianIPOs.filter(ipo => ipo.status === 'Upcoming')],
-      foreign: upcomingCategorized.foreign,
-      all: upcomingRaw
-    },
-    recent: {
-      indian: [...recentCategorized.indian, ...indianIPOs.filter(ipo => ipo.status === 'Listed')],
-      foreign: recentCategorized.foreign,
-      all: recentRaw
-    },
-    indian: indianIPOs,
-    all: [...upcomingRaw, ...recentRaw, ...indianIPOs]
-  };
+        const allIPOs = response.data?.ipoCalendar || [];
+        
+        // Filter out Indian exchanges to get only foreign IPOs
+        foreignIPOs = allIPOs.filter(ipo => {
+          const ex = (ipo.exchange || '').toUpperCase();
+          const sym = ipo.symbol || '';
+          return !ex.includes('NSE') && !ex.includes('BSE') && 
+                 !sym.includes('.NS') && !sym.includes('.BO');
+        }).map(ipo => ({
+          company: ipo.name,
+          symbol: ipo.symbol,
+          exchange: ipo.exchange || 'NASDAQ',
+          date: ipo.date,
+          priceRange: ipo.priceRange || 'TBA',
+          status: getIPOStatus(ipo.date),
+          sector: ipo.industry || '—',
+          shares: ipo.numberOfShares || 'TBA'
+        }));
+      } catch (error) {
+        console.warn('Failed to fetch foreign IPOs from Finnhub:', error.message);
+      }
+    }
+
+    // Combine NSE-BSE and foreign IPOs
+    const combinedData = {
+      upcoming: {
+        indian: nseBseData.upcoming.indian,
+        foreign: [...nseBseData.upcoming.foreign, ...foreignIPOs.filter(ipo => ipo.status === 'Upcoming')],
+        all: [...nseBseData.upcoming.all, ...foreignIPOs.filter(ipo => ipo.status === 'Upcoming')]
+      },
+      recent: {
+        indian: nseBseData.recent.indian,
+        foreign: [...nseBseData.recent.foreign, ...foreignIPOs.filter(ipo => ipo.status === 'Listed' || ipo.status === 'Today')],
+        all: [...nseBseData.recent.all, ...foreignIPOs.filter(ipo => ipo.status === 'Listed' || ipo.status === 'Today')]
+      },
+      indian: nseBseData.indian,
+      all: [...nseBseData.all, ...foreignIPOs]
+    };
+
+    return combinedData;
+  } catch (error) {
+    console.error('Error in getAllIPOs:', error.message);
+    // Fallback to original method if NSE-BSE fails
+    return await getFallbackIPOs();
+  }
+}
+
+/**
+ * Fallback method using original Finnhub-only approach
+ */
+async function getFallbackIPOs() {
+  try {
+    const [upcomingRaw, recentRaw, indianIPOs] = await Promise.all([
+      getUpcomingIPOs(),
+      getRecentIPOs(),
+      getIndianIPOs()
+    ]);
+
+    // Categorize upcoming and recent by region
+    const upcomingCategorized = categorizeIPOsByRegion(upcomingRaw);
+    const recentCategorized = categorizeIPOsByRegion(recentRaw);
+
+    return {
+      upcoming: {
+        indian: [...upcomingCategorized.indian, ...indianIPOs.filter(ipo => ipo.status === 'Upcoming')],
+        foreign: upcomingCategorized.foreign,
+        all: upcomingRaw
+      },
+      recent: {
+        indian: [...recentCategorized.indian, ...indianIPOs.filter(ipo => ipo.status === 'Listed')],
+        foreign: recentCategorized.foreign,
+        all: recentRaw
+      },
+      indian: indianIPOs,
+      all: [...upcomingRaw, ...recentRaw, ...indianIPOs]
+    };
+  } catch (error) {
+    console.error('Fallback IPO method also failed:', error.message);
+    return {
+      upcoming: { indian: [], foreign: [], all: [] },
+      recent: { indian: [], foreign: [], all: [] },
+      indian: [],
+      all: []
+    };
+  }
 }
