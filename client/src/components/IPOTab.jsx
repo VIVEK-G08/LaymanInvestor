@@ -3,7 +3,7 @@ import { Calendar, TrendingUp, Globe, MapPin, DollarSign, Users, Clock, Sparkles
 import { useApp } from '../contexts/AppContext';
 
 const IPOTab = ({ onStockClick }) => {
-  const { selectedCountry, countryConfig } = useApp();
+  const { selectedCountry } = useApp();
   const [ipoData, setIpoData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

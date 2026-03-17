@@ -3,7 +3,7 @@ import { TrendingUp, TrendingDown, Flame, RefreshCw } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 
 const TopStocks = ({ onStockClick }) => {
-  const { selectedCountry, countryConfig } = useApp();
+  const { selectedCountry } = useApp();
   const [topGainers, setTopGainers] = useState([]);
   const [topLosers, setTopLosers] = useState([]);
   const [trending, setTrending] = useState([]);
