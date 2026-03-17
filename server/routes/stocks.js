@@ -79,23 +79,33 @@ router.delete('/watchlist/:userId/:symbol', async (req, res) => {
   }
 });
 
-// IPO Listings endpoints using NSE-BSE API
+// IPO Listings endpoints using NSE-BSE API - Returns structure expected by frontend
 router.get('/ipos/upcoming', async (req, res) => {
   try {
     const { exchange = 'both' } = req.query;
     const allIPOs = await getAllIPOs();
     
-    // Filter based on exchange parameter
-    let ipos = allIPOs.upcoming.all;
+    // Return data in the structure expected by IPOTab.jsx frontend
+    // Frontend expects: { upcoming: { all: [], indian: [], foreign: [] } }
+    const upcoming = {
+      all: allIPOs.upcoming?.all || [],
+      indian: allIPOs.upcoming?.indian || [],
+      foreign: allIPOs.upcoming?.foreign || []
+    };
+    
+    // Filter based on exchange parameter if specified
     if (exchange === 'nse') {
-      ipos = allIPOs.upcoming.indian.filter(ipo => ipo.exchange === 'NSE');
+      upcoming.all = upcoming.indian.filter(ipo => ipo.exchange === 'NSE');
     } else if (exchange === 'bse') {
-      ipos = allIPOs.upcoming.indian.filter(ipo => ipo.exchange === 'BSE');
+      upcoming.all = upcoming.indian.filter(ipo => ipo.exchange === 'BSE');
     } else if (exchange === 'indian') {
-      ipos = allIPOs.upcoming.indian;
+      upcoming.all = upcoming.indian;
     }
     
-    res.json({ ipos });
+    res.json({ 
+      upcoming,
+      recent: { all: [], indian: [], foreign: [] } // Empty recent for upcoming endpoint
+    });
   } catch (error) {
     console.error('IPO fetch error:', error);
     res.status(500).json({ error: error.message });
@@ -106,7 +116,19 @@ router.get('/ipos/upcoming', async (req, res) => {
 router.get('/ipos', async (req, res) => {
   try {
     const allIPOs = await getAllIPOs();
-    res.json(allIPOs);
+    // Return data in the structure expected by IPOTab.jsx frontend
+    // Frontend expects: { upcoming: { all: [], indian: [], foreign: [] }, recent: { all: [], indian: [], foreign: [] } }
+    const upcoming = {
+      all: allIPOs.upcoming?.all || [],
+      indian: allIPOs.upcoming?.indian || [],
+      foreign: allIPOs.upcoming?.foreign || []
+    };
+    const recent = {
+      all: allIPOs.recent?.all || [],
+      indian: allIPOs.recent?.indian || [],
+      foreign: allIPOs.recent?.foreign || []
+    };
+    res.json({ upcoming, recent });
   } catch (error) {
     console.error('IPO fetch error:', error);
     res.status(500).json({ error: error.message });
@@ -124,19 +146,28 @@ router.get('/ipos/indian', async (req, res) => {
   }
 });
 
-// Recent IPOs endpoint
+// Recent IPOs endpoint - Returns structure expected by frontend
 router.get('/ipos/recent', async (req, res) => {
   try {
     const { exchange = 'both' } = req.query;
     const allIPOs = await getAllIPOs();
     
-    // Filter based on exchange parameter
-    let ipos = allIPOs.recent.all;
+    // Return data in the structure expected by IPOTab.jsx frontend
+    const recent = {
+      all: allIPOs.recent?.all || [],
+      indian: allIPOs.recent?.indian || [],
+      foreign: allIPOs.recent?.foreign || []
+    };
+    
+    // Filter based on exchange parameter if specified
     if (exchange === 'indian') {
-      ipos = allIPOs.recent.indian;
+      recent.all = recent.indian;
     }
     
-    res.json({ ipos });
+    res.json({ 
+      recent,
+      upcoming: { all: [], indian: [], foreign: [] } // Empty upcoming for recent endpoint
+    });
   } catch (error) {
     console.error('Recent IPO fetch error:', error);
     res.status(500).json({ error: error.message });
