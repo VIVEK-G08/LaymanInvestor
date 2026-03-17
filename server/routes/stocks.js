@@ -1,5 +1,6 @@
 import express from 'express';
 import indianStockService from '../services/indianStockService.js';
+import { getAllIPOs } from '../services/ipoService.js';
 import { saveWatchedStock, getWatchlist, removeFromWatchlist } from '../services/supabaseService.js';
 
 const router = express.Router();
@@ -78,39 +79,68 @@ router.delete('/watchlist/:userId/:symbol', async (req, res) => {
   }
 });
 
-// IPO Listings endpoints using NSE/BSE direct APIs
+// IPO Listings endpoints using NSE-BSE API
 router.get('/ipos/upcoming', async (req, res) => {
   try {
     const { exchange = 'both' } = req.query;
-    const ipos = await indianStockService.getUpcomingIPOs(exchange);
+    const allIPOs = await getAllIPOs();
+    
+    // Filter based on exchange parameter
+    let ipos = allIPOs.upcoming.all;
+    if (exchange === 'nse') {
+      ipos = allIPOs.upcoming.indian.filter(ipo => ipo.exchange === 'NSE');
+    } else if (exchange === 'bse') {
+      ipos = allIPOs.upcoming.indian.filter(ipo => ipo.exchange === 'BSE');
+    } else if (exchange === 'indian') {
+      ipos = allIPOs.upcoming.indian;
+    }
+    
     res.json({ ipos });
   } catch (error) {
+    console.error('IPO fetch error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Legacy IPO endpoints for backward compatibility
+// Main IPO endpoint - returns all IPO data
 router.get('/ipos', async (req, res) => {
   try {
-    const ipos = await indianStockService.getUpcomingIPOs('both');
-    res.json({ ipos });
+    const allIPOs = await getAllIPOs();
+    res.json(allIPOs);
   } catch (error) {
+    console.error('IPO fetch error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
+// Indian IPOs endpoint
 router.get('/ipos/indian', async (req, res) => {
   try {
-    const ipos = await indianStockService.getUpcomingIPOs('both');
-    res.json({ ipos });
+    const allIPOs = await getAllIPOs();
+    res.json({ ipos: allIPOs.indian });
   } catch (error) {
+    console.error('Indian IPO fetch error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Remove recent IPOs as NSE/BSE APIs focus on upcoming IPOs
-// router.get('/ipos/recent', async (req, res) => {
-//   // Can be implemented later if needed
-// });
+// Recent IPOs endpoint
+router.get('/ipos/recent', async (req, res) => {
+  try {
+    const { exchange = 'both' } = req.query;
+    const allIPOs = await getAllIPOs();
+    
+    // Filter based on exchange parameter
+    let ipos = allIPOs.recent.all;
+    if (exchange === 'indian') {
+      ipos = allIPOs.recent.indian;
+    }
+    
+    res.json({ ipos });
+  } catch (error) {
+    console.error('Recent IPO fetch error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default router;
