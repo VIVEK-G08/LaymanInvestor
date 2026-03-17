@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown, Flame, RefreshCw } from 'lucide-react';
+import { useApp } from '../contexts/AppContext';
 
 const TopStocks = ({ onStockClick }) => {
+  const { selectedCountry, countryConfig } = useApp();
   const [topGainers, setTopGainers] = useState([]);
   const [topLosers, setTopLosers] = useState([]);
   const [trending, setTrending] = useState([]);
@@ -17,8 +19,8 @@ const TopStocks = ({ onStockClick }) => {
     
     try {
       const [moversRes, trendingRes] = await Promise.all([
-        fetch(`${API_URL}/market/top-movers?limit=5`),
-        fetch(`${API_URL}/market/trending?limit=5`)
+        fetch(`${API_URL}/market/top-movers?limit=5&country=${selectedCountry}`),
+        fetch(`${API_URL}/market/trending?limit=5&country=${selectedCountry}`)
       ]);
 
       if (!moversRes.ok || !trendingRes.ok) {
@@ -35,21 +37,43 @@ const TopStocks = ({ onStockClick }) => {
     } catch (err) {
       console.error('Market data fetch error:', err);
       setError(err.message);
-      // Set fallback data
-      setTopGainers([
-        { symbol: 'RELIANCE.NS', name: 'Reliance Industries', change: '+2.8%', price: '₹2,456', isGainer: true },
-        { symbol: 'TCS.NS', name: 'Tata Consultancy', change: '+1.9%', price: '₹3,245', isGainer: true },
-      ]);
-      setTopLosers([
-        { symbol: 'TATAMOTORS.NS', name: 'Tata Motors', change: '-1.8%', price: '₹745', isGainer: false },
-      ]);
-      setTrending([
-        { symbol: 'AAPL', name: 'Apple Inc.', volume: 'High' },
-      ]);
+      // Set fallback data based on selected country
+      if (selectedCountry === 'IN') {
+        setTopGainers([
+          { symbol: 'RELIANCE.NS', name: 'Reliance Industries', change: '+2.8%', price: '₹2,456', isGainer: true },
+          { symbol: 'TCS.NS', name: 'Tata Consultancy', change: '+1.9%', price: '₹3,245', isGainer: true },
+          { symbol: 'HDFCBANK.NS', name: 'HDFC Bank', change: '+1.5%', price: '₹1,678', isGainer: true },
+        ]);
+        setTopLosers([
+          { symbol: 'TATAMOTORS.NS', name: 'Tata Motors', change: '-1.8%', price: '₹745', isGainer: false },
+          { symbol: 'YESBANK.NS', name: 'Yes Bank', change: '-2.1%', price: '₹18.5', isGainer: false },
+        ]);
+        setTrending([
+          { symbol: 'RELIANCE.NS', name: 'Reliance Industries', volume: 'High' },
+          { symbol: 'TCS.NS', name: 'Tata Consultancy', volume: 'High' },
+          { symbol: 'INFY.NS', name: 'Infosys', volume: 'High' },
+        ]);
+      } else {
+        // US stocks fallback
+        setTopGainers([
+          { symbol: 'AAPL', name: 'Apple Inc.', change: '+2.3%', price: '$178.45', isGainer: true },
+          { symbol: 'MSFT', name: 'Microsoft Corp.', change: '+1.8%', price: '$378.22', isGainer: true },
+          { symbol: 'GOOGL', name: 'Alphabet Inc.', change: '+1.5%', price: '$142.65', isGainer: true },
+        ]);
+        setTopLosers([
+          { symbol: 'TSLA', name: 'Tesla Inc.', change: '-3.2%', price: '$245.12', isGainer: false },
+          { symbol: 'META', name: 'Meta Platforms', change: '-2.1%', price: '$312.45', isGainer: false },
+        ]);
+        setTrending([
+          { symbol: 'AAPL', name: 'Apple Inc.', volume: 'High' },
+          { symbol: 'TSLA', name: 'Tesla Inc.', volume: 'High' },
+          { symbol: 'NVDA', name: 'NVIDIA Corp.', volume: 'High' },
+        ]);
+      }
     } finally {
       setLoading(false);
     }
-  }, [API_URL]);
+  }, [API_URL, selectedCountry]);
 
   useEffect(() => {
     fetchMarketData();

@@ -277,6 +277,15 @@ const LaymanInvestorApp = () => {
     setIsTyping(true);
     setShowDepthResult(false);
     
+    // Add the query to chat history
+    const userMessage = {
+      role: 'user',
+      content: `Market analysis: ${depthSearchQuery}`,
+      timestamp: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    
     try {
       const response = await fetch(`${API_URL}/market/depth-search`, {
         method: 'POST',
@@ -291,9 +300,26 @@ const LaymanInvestorApp = () => {
       const result = await response.json();
       setDepthSearchResult(result);
       setShowDepthResult(true);
+      
+      // Add AI response to chat
+      const aiMessage = {
+        role: 'assistant',
+        content: result.analysis || `Here's my analysis of ${depthSearchQuery}: I've gathered comprehensive market data including current trends, recent news, and key insights for your research.`,
+        emotion: 'analytical',
+        timestamp: new Date().toISOString()
+      };
+      
+      setMessages(prev => [...prev, aiMessage]);
+      
     } catch (error) {
       console.error('Depth search error:', error);
-      alert('Could not perform depth search. Please try again.');
+      const errorMessage = {
+        role: 'assistant',
+        content: 'I apologize, but I encountered an error while analyzing the market data. Please try again or rephrase your query.',
+        emotion: 'concerned',
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
     }
@@ -447,7 +473,8 @@ const LaymanInvestorApp = () => {
         <div className="max-w-6xl mx-auto">
           {/* Chat Tab */}
           {activeTab === 'chat' && (
-            <div className="space-y-4">
+            <div className="flex flex-col h-full">
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-2xl ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 border border-gray-200'} rounded-2xl px-5 py-3 shadow-sm`}>

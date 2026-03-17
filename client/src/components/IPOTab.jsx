@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, TrendingUp, Globe, MapPin, DollarSign, Users, Clock, Sparkles, RefreshCw, ChevronRight, Building2, Award } from 'lucide-react';
+import { useApp } from '../contexts/AppContext';
 
 const IPOTab = ({ onStockClick }) => {
+  const { selectedCountry, countryConfig } = useApp();
   const [ipoData, setIpoData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,7 +15,7 @@ const IPOTab = ({ onStockClick }) => {
   const fetchIPOData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/stocks/ipos`);
+      const response = await fetch(`${API_URL}/stocks/ipos/upcoming?exchange=${selectedCountry === 'IN' ? 'nse' : 'all'}`);
       const data = await response.json();
       setIpoData(data);
       setError(null);
@@ -23,7 +25,7 @@ const IPOTab = ({ onStockClick }) => {
     } finally {
       setLoading(false);
     }
-  }, [API_URL]);
+  }, [API_URL, selectedCountry]);
 
   useEffect(() => {
     fetchIPOData();
