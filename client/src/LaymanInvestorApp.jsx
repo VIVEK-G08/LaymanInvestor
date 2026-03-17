@@ -225,6 +225,7 @@ const LaymanInvestorApp = () => {
       alert('Could not fetch stock data. Please check the symbol.');
     }
   };
+
   const handleTopStockClick = async (symbol) => {
     setStockSearch(symbol);
     setActiveTab('stocks');
@@ -469,52 +470,52 @@ const LaymanInvestorApp = () => {
       </div>
 
       {/* Main Content */}
-      <>
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-6xl mx-auto">
           {/* Chat Tab */}
           {activeTab === 'chat' && (
             <div className="flex flex-col h-full">
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-              {messages.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-2xl ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 border border-gray-200'} rounded-2xl px-5 py-3 shadow-sm`}>
-                    {msg.role === 'assistant' && msg.emotion && idx > 0 && (
-                      <div className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full mb-2 ${getEmotionBadge(msg.emotion).color}`}>
-                        <span>{getEmotionBadge(msg.emotion).icon}</span>
-                        <span className="font-medium">{getEmotionBadge(msg.emotion).text}</span>
-                      </div>
-                    )}
-                    <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                  </div>
-                </div>
-              ))}
-
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-white border border-gray-200 rounded-2xl px-5 py-3 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                      </div>
-                      <span className="text-sm text-gray-600">Analyzing market data...</span>
+                {messages.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-2xl ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800 border border-gray-200'} rounded-2xl px-5 py-3 shadow-sm`}>
+                      {msg.role === 'assistant' && msg.emotion && idx > 0 && (
+                        <div className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full mb-2 ${getEmotionBadge(msg.emotion).color}`}>
+                          <span>{getEmotionBadge(msg.emotion).icon}</span>
+                          <span className="font-medium">{getEmotionBadge(msg.emotion).text}</span>
+                        </div>
+                      )}
+                      <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                     </div>
                   </div>
-                </div>
-              )}
+                ))}
 
-              {detectedEmotion && (
-                <div className="flex justify-center">
-                  <div className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full ${getEmotionBadge(detectedEmotion).color}`}>
-                    <Brain className="w-4 h-4" />
-                    <span>Detected: {getEmotionBadge(detectedEmotion).text}</span>
+                {isTyping && (
+                  <div className="flex justify-start">
+                    <div className="bg-white border border-gray-200 rounded-2xl px-5 py-3 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                        <span className="text-sm text-gray-600">Analyzing market data...</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div ref={messagesEndRef} />
+                {detectedEmotion && (
+                  <div className="flex justify-center">
+                    <div className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full ${getEmotionBadge(detectedEmotion).color}`}>
+                      <Brain className="w-4 h-4" />
+                      <span>Detected: {getEmotionBadge(detectedEmotion).text}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
             </div>
           )}
 
@@ -799,66 +800,61 @@ const LaymanInvestorApp = () => {
           {activeTab === 'news' && (
             <NewsTab />
           )}
-        </div>
-      </div>
 
-      {/* Chat Input (only show on chat tab) */}
-      {activeTab === 'chat' && (
-        <div className="px-4 pb-4">
-          <div className="max-w-6xl mx-auto">
-            <p className="text-sm text-gray-600 mb-3 flex items-center gap-2">
-              <Zap className="w-4 h-4" />
-              Try asking:
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {quickPrompts.map((prompt, idx) => (
-                  <Zap className="w-4 h-4" />
-                  Try asking:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {quickPrompts.map((prompt, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setInput(prompt)}
-                      className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-all"
-                    >
-                      {prompt}
-                    </button>
-                  ))}
+          {/* Chat Input (only show on chat tab) */}
+          {activeTab === 'chat' && (
+            <>
+              <div className="px-4 pb-4">
+                <div className="max-w-6xl mx-auto">
+                  <p className="text-sm text-gray-600 mb-3 flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Try asking:
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {quickPrompts.map((prompt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setInput(prompt)}
+                        className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-all"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
 
-          <div className="bg-white border-t border-gray-200 px-4 py-4">
-            <div className="max-w-6xl mx-auto">
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Ask for real-time data, analysis, or explanations..."
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={!input.trim()}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 font-medium shadow-lg shadow-indigo-200"
-                >
-                  <Send className="w-5 h-5" />
-                  Send
-                </button>
+              <div className="bg-white border-t border-gray-200 px-4 py-4">
+                <div className="max-w-6xl mx-auto">
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                      placeholder="Ask for real-time data, analysis, or explanations..."
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                    <button
+                      onClick={handleSend}
+                      disabled={!input.trim()}
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 font-medium shadow-lg shadow-indigo-200"
+                    >
+                      <Send className="w-5 h-5" />
+                      Send
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    I provide real market data for investors and simple explanations for learners
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                I provide real market data for investors and simple explanations for learners
-              </p>
-            </div>
-          </div>
-        </>
-      )}
-      </>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
+};
 
 export default LaymanInvestorApp;
