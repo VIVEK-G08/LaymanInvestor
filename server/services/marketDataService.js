@@ -1,13 +1,12 @@
 import { getStockQuote } from './stockService.js';
-import { getNSEBSENews } from './nseBseService.js';
 import cache from '../utils/cache.js';
 
-// Popular Indian stocks to track for gainers/losers (NSE-BSE only)
+// Popular stocks to track for gainers/losers (Indian + US)
 const TRACKED_STOCKS = [
-  'RELIANCE', 'TCS', 'INFY', 'HDFCBANK', 'ICICIBANK',
-  'SBIN', 'TATAMOTORS', 'TATASTEEL', 'WIPRO', 'LT',
-  'BAJFINANCE', 'MARUTI', 'TITAN', 'SUNPHARMA', 'ONGC',
-  'HINDUNILVR', 'ASIANPAINT', 'NESTLEIND', 'ULTRACEMCO', 'JSWSTEEL'
+  'RELIANCE.NS', 'TCS.NS', 'INFY.NS', 'HDFCBANK.NS', 'ICICIBANK.NS',
+  'SBIN.NS', 'TATAMOTORS.NS', 'TATASTEEL.NS', 'WIPRO.NS', 'LT.NS',
+  'BAJFINANCE.NS', 'MARUTI.NS', 'TITAN.NS', 'SUNPHARMA.NS', 'ONGC.NS',
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX'
 ];
 
 /**
@@ -93,7 +92,7 @@ export async function getTopMovers(limit = 5) {
 }
 
 /**
- * Get trending stocks from NSE-BSE corporate announcements
+ * Get trending stocks (highest volume/movers)
  * @param {number} limit - Number of stocks to return
  * @returns {Promise<Object>} Object with trending array
  */
@@ -107,58 +106,17 @@ export async function getTrendingStocks(limit = 5) {
   }
 
   try {
-    console.log('Fetching trending stocks from NSE-BSE announcements...');
+    console.log('Fetching trending stocks from top movers...');
     
-    // Get recent corporate announcements
-    const announcements = await getNSEBSENews('corporate');
-    
-    // Extract mentioned stocks from announcements
-    const mentionedStocks = [];
-    announcements.slice(0, 20).forEach(announcement => {
-      const text = (announcement.headline + ' ' + announcement.summary).toUpperCase();
-      
-      // Look for stock symbols in the text
-      TRACKED_STOCKS.forEach(stock => {
-        if (text.includes(stock) && !mentionedStocks.find(s => s.symbol === stock)) {
-          mentionedStocks.push({
-            symbol: stock,
-            name: getStockName(stock),
-            reason: announcement.headline,
-            timestamp: announcement.datetime
-          });
-        }
-      });
-    });
-
-    // Get current quotes for mentioned stocks
-    const trendingStocks = await Promise.all(
-      mentionedStocks.slice(0, limit * 2).map(async (stock) => {
-        try {
-          const quote = await getStockQuote(stock.symbol);
-          if (quote && quote.c > 0) {
-            return {
-              symbol: stock.symbol,
-              name: stock.name,
-              price: `₹${quote.c.toFixed(2)}`,
-              change: `${quote.dp >= 0 ? '+' : ''}${quote.dp.toFixed(2)}%`,
-              reason: stock.reason,
-              isGainer: quote.dp > 0
-            };
-          }
-        } catch (error) {
-          console.error(`Error fetching quote for trending ${stock.symbol}:`, error.message);
-        }
-        return null;
-      })
-    );
-
-    const validTrending = trendingStocks.filter(stock => stock !== null).slice(0, limit);
+    // Use top gainers as trending stocks
+    const movers = await getTopMovers(limit * 2);
+    const trendingStocks = [...movers.gainers, ...movers.losers].slice(0, limit);
     
     // Cache for 10 minutes
-    cache.set(cacheKey, validTrending, 600);
+    cache.set(cacheKey, trendingStocks, 600);
     
-    console.log(`Found ${validTrending.length} trending stocks`);
-    return { trending: validTrending };
+    console.log(`Found ${trendingStocks.length} trending stocks`);
+    return { trending: trendingStocks };
   } catch (error) {
     console.error('Trending Stocks Error:', error);
     return { trending: getFallbackTrending(limit) };
@@ -166,7 +124,7 @@ export async function getTrendingStocks(limit = 5) {
 }
 
 /**
- * Get market overview using NSE-BSE data
+ * Get market overview using Yahoo/Finnhub data
  * @returns {Promise<Object>} Market overview data
  */
 export async function getMarketOverview() {
@@ -179,11 +137,11 @@ export async function getMarketOverview() {
   }
 
   try {
-    console.log('Fetching market overview from NSE-BSE...');
+    console.log('Fetching market overview from Yahoo/Finnhub...');
     
-    // Get quotes for major Indian indices and stocks
-    const indexSymbols = ['NIFTY', 'SENSEX', 'BANKNIFTY'];
-    const majorStocks = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY'];
+    // Get quotes for major Indian indices and stocks (use .NS extension)
+    const indexSymbols = ['^NSEI', '^BSESN'];
+    const majorStocks = ['RELIANCE.NS', 'TCS.NS', 'HDFCBANK.NS', 'INFY.NS'];
     
     const [indexQuotes, stockQuotes] = await Promise.all([
       Promise.all(indexSymbols.map(symbol => getStockQuote(symbol).catch(() => null))),
@@ -231,6 +189,7 @@ export async function getMarketOverview() {
 
 // Helper function to get stock name
 function getStockName(symbol) {
+  const cleanSymbol = symbol.replace('.NS', '').replace('.BO', '');
   const stockNames = {
     'RELIANCE': 'Reliance Industries',
     'TCS': 'Tata Consultancy Services',
@@ -254,10 +213,12 @@ function getStockName(symbol) {
     'JSWSTEEL': 'JSW Steel',
     'NIFTY': 'Nifty 50',
     'SENSEX': 'BSE Sensex',
-    'BANKNIFTY': 'Nifty Bank'
+    'BANKNIFTY': 'Nifty Bank',
+    '^NSEI': 'Nifty 50',
+    '^BSESN': 'BSE Sensex'
   };
   
-  return stockNames[symbol] || symbol;
+  return stockNames[cleanSymbol] || stockNames[symbol] || cleanSymbol;
 }
 
 // Fallback data for top movers

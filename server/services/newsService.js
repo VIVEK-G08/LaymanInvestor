@@ -1,7 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
 import { getCache, setCache } from '../utils/cache.js';
-import { getNSEBSENews } from './nseBseService.js';
 
 dotenv.config();
 
@@ -97,16 +96,7 @@ export async function getMarketNews(category = 'general', limit = 20) {
   try {
     let news = [];
     
-    // Try to get NSE-BSE corporate announcements for Indian market context
-    let nseBseNews = [];
-    try {
-      nseBseNews = await getNSEBSENews('corporate');
-      console.log(`NSE-BSE announcements: ${nseBseNews.length} items`);
-    } catch (error) {
-      console.warn('Failed to fetch NSE-BSE announcements:', error.message);
-    }
-    
-    // Get news from primary provider
+    // Get news from primary provider (Finnhub or NewsAPI)
     if (NEWS_PROVIDER === 'newsapi' && NEWS_API_KEY) {
       console.log('Using NewsAPI.org provider');
       news = await fetchNewsFromNewsAPI({ category, country: 'us', pageSize: limit });
@@ -135,24 +125,8 @@ export async function getMarketNews(category = 'general', limit = 20) {
       news = getMockNews(category, limit);
     }
 
-    // Combine NSE-BSE announcements with other news
-    if (nseBseNews.length > 0) {
-      // Add a few NSE-BSE announcements to provide Indian market context
-      const relevantAnnouncements = nseBseNews.slice(0, 5);
-      news = [...relevantAnnouncements, ...news];
-    }
-
-    // If no news after filtering, use mock data
-    if (news.length === 0) {
-      console.log('No news after filtering, using mock data');
-      news = getMockNews(category, limit);
-    }
-
-    // Sort by datetime (most recent first) and limit
-    news.sort((a, b) => b.datetime - a.datetime);
-    news = news.slice(0, limit);
-
-    setCache(cacheKey, news, 300); // Cache for 5 minutes
+    // Cache and return news (Finnhub or NewsAPI only)
+    setCache(cacheKey, news, 300);
     return news;
   } catch (error) {
     console.error('Error fetching market news:', error.message);
@@ -221,28 +195,20 @@ export async function getCountryNews(country = 'IN', category = 'business') {
     let result = [];
     
     if (country === 'IN') {
-      // For India, use NSE-BSE announcements as primary source
-      const nseBseNews = await getNSEBSENews('corporate');
-      
-      // If we have NSE-BSE news, use it as primary source
-      if (nseBseNews.length > 0) {
-        result = nseBseNews.slice(0, 20);
+      // For India, use NewsAPI with India filter or Finnhub
+      if (NEWS_PROVIDER === 'newsapi' && NEWS_API_KEY) {
+        result = await fetchNewsFromNewsAPI({ country: 'in', category });
       } else {
-        // Fallback to other providers
-        if (NEWS_PROVIDER === 'newsapi' && NEWS_API_KEY) {
-          result = await fetchNewsFromNewsAPI({ country: 'in', category });
-        } else {
-          // fallback to general market news filtered by keywords
-          const marketNews = await getMarketNews('general', 20);
-          result = marketNews.filter((article) => {
-            const text = article.headline?.toLowerCase() + ' ' + article.summary?.toLowerCase();
-            return text.includes('india') ||
-                   text.includes('nse') ||
-                   text.includes('sensex') ||
-                   text.includes('nifty') ||
-                   text.includes('bse');
-          });
-        }
+        // fallback to general market news filtered by keywords
+        const marketNews = await getMarketNews('general', 20);
+        result = marketNews.filter((article) => {
+          const text = article.headline?.toLowerCase() + ' ' + article.summary?.toLowerCase();
+          return text.includes('india') ||
+                 text.includes('nse') ||
+                 text.includes('sensex') ||
+                 text.includes('nifty') ||
+                 text.includes('bse');
+        });
       }
     } else if (country === 'US') {
       // For US, use existing providers
@@ -276,8 +242,7 @@ export async function getCountryNews(country = 'IN', category = 'business') {
 }
 
 /**
- * Get IPO-related news
- * Combines Finnhub IPO news with NSE-BSE corporate announcements
+ * Get IPO-related news from Finnhub only
  */
 export async function getIPONews() {
   const cacheKey = 'ipo_news';
@@ -285,8 +250,6 @@ export async function getIPONews() {
   if (cached) return cached;
 
   try {
-    let allIPONews = [];
-    
     // Get IPO-related news from Finnhub
     const marketNews = await getMarketNews('general', 50);
     const finnhubIPONews = marketNews.filter(article => {
@@ -297,30 +260,9 @@ export async function getIPONews() {
              text.includes('listing');
     });
     
-    allIPONews = [...finnhubIPONews];
-    
-    // Add NSE-BSE corporate announcements that might be IPO-related
-    try {
-      const nseBseNews = await getNSEBSENews('corporate');
-      const ipoRelatedAnnouncements = nseBseNews.filter(article => {
-        const text = (article.headline + ' ' + article.summary).toLowerCase();
-        return text.includes('ipo') ||
-               text.includes('initial public offering') ||
-               text.includes('going public') ||
-               text.includes('listing') ||
-               text.includes('issue') ||
-               text.includes('allotment') ||
-               text.includes('refund');
-      });
-      
-      allIPONews = [...allIPONews, ...ipoRelatedAnnouncements];
-    } catch (error) {
-      console.warn('Failed to fetch NSE-BSE IPO news:', error.message);
-    }
-    
     // Sort by datetime (most recent first) and limit to 20 articles
-    allIPONews.sort((a, b) => b.datetime - a.datetime);
-    const finalNews = allIPONews.slice(0, 20);
+    finnhubIPONews.sort((a, b) => b.datetime - a.datetime);
+    const finalNews = finnhubIPONews.slice(0, 20);
 
     setCache(cacheKey, finalNews, 600); // Cache for 10 minutes
     return finalNews;

@@ -1,10 +1,13 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
-import { getAllNSEBSEIPOs } from './nseBseService.js';
+import NSEService from './nseService.js';
+import BSEService from './bseService.js';
 
 dotenv.config();
 
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
+const nseService = new NSEService();
+const bseService = new BSEService();
 
 /**
  * Get IPO calendar data from Finnhub
@@ -294,12 +297,38 @@ function categorizeIPOsByRegion(ipos) {
 
 /**
  * Get all IPO data categorized by region and time
- * Uses NSE-BSE API for Indian IPOs and Finnhub for foreign IPOs
+ * Uses original NSE/BSE scraping services for Indian IPOs and Finnhub for foreign IPOs
  */
 export async function getAllIPOs() {
   try {
-    // Get Indian IPOs from NSE-BSE API
-    const nseBseData = await getAllNSEBSEIPOs();
+    // Get Indian IPOs from original NSE/BSE services
+    let indianIPOs = [];
+    try {
+      const [nseIPOs, bseIPOs] = await Promise.all([
+        nseService.getUpcomingIPOs().catch(() => []),
+        bseService.getUpcomingIPOs().catch(() => [])
+      ]);
+      
+      // Combine and remove duplicates
+      const combined = [...nseIPOs, ...bseIPOs];
+      indianIPOs = combined.filter((item, index, self) =>
+        index === self.findIndex((t) => t.companyName === item.companyName)
+      );
+      
+      // Transform to consistent format
+      indianIPOs = indianIPOs.map(ipo => ({
+        company: ipo.companyName,
+        symbol: ipo.symbol,
+        exchange: ipo.exchange,
+        date: ipo.openDate || ipo.date,
+        priceRange: ipo.issuePrice || ipo.priceRange || 'TBA',
+        status: ipo.status,
+        sector: '—',
+        shares: ipo.issueSize || 'TBA'
+      }));
+    } catch (error) {
+      console.warn('Failed to fetch from NSE/BSE services:', error.message);
+    }
     
     // Get foreign IPOs from Finnhub (if API key is available)
     let foreignIPOs = [];
@@ -342,26 +371,32 @@ export async function getAllIPOs() {
       }
     }
 
-    // Combine NSE-BSE and foreign IPOs
+    // Categorize by status
+    const upcomingIndian = indianIPOs.filter(ipo => ipo.status === 'Upcoming' || ipo.status === 'Open Now');
+    const recentIndian = indianIPOs.filter(ipo => ipo.status === 'Listed' || ipo.status === 'Closed');
+    const upcomingForeign = foreignIPOs.filter(ipo => ipo.status === 'Upcoming');
+    const recentForeign = foreignIPOs.filter(ipo => ipo.status === 'Listed' || ipo.status === 'Today');
+
+    // Combine data
     const combinedData = {
       upcoming: {
-        indian: nseBseData.upcoming.indian,
-        foreign: [...nseBseData.upcoming.foreign, ...foreignIPOs.filter(ipo => ipo.status === 'Upcoming')],
-        all: [...nseBseData.upcoming.all, ...foreignIPOs.filter(ipo => ipo.status === 'Upcoming')]
+        indian: upcomingIndian,
+        foreign: upcomingForeign,
+        all: [...upcomingIndian, ...upcomingForeign]
       },
       recent: {
-        indian: nseBseData.recent.indian,
-        foreign: [...nseBseData.recent.foreign, ...foreignIPOs.filter(ipo => ipo.status === 'Listed' || ipo.status === 'Today')],
-        all: [...nseBseData.recent.all, ...foreignIPOs.filter(ipo => ipo.status === 'Listed' || ipo.status === 'Today')]
+        indian: recentIndian,
+        foreign: recentForeign,
+        all: [...recentIndian, ...recentForeign]
       },
-      indian: nseBseData.indian,
-      all: [...nseBseData.all, ...foreignIPOs]
+      indian: indianIPOs,
+      all: [...indianIPOs, ...foreignIPOs]
     };
 
     return combinedData;
   } catch (error) {
     console.error('Error in getAllIPOs:', error.message);
-    // Fallback to original method if NSE-BSE fails
+    // Fallback to original method
     return await getFallbackIPOs();
   }
 }
